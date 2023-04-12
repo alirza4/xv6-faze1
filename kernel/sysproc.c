@@ -99,10 +99,8 @@ return getProcTick(pid);
 
 
 uint64
-sys_info(void){
-return sysinfo()
+sys_sysinfo(void){
+  uint64 address1;
+  argaddr(0, &address1);
+  return sysinfo(address1);
 }
-
-
-
-

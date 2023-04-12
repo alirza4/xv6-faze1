@@ -5,6 +5,8 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
+#include "sysinfo.h"
+
 
 struct cpu cpus[NCPU];
 
@@ -145,6 +147,10 @@ found:
   memset(&p->context, 0, sizeof(p->context));
   p->context.ra = (uint64)forkret;
   p->context.sp = p->kstack + PGSIZE;
+
+  acquire(&tickslock);
+  p->start=ticks;
+  release(&tickslock);
 
   return p;
 }
@@ -322,11 +328,7 @@ fork(void)
   np->state = RUNNABLE;
   release(&np->lock);
 
-  acquire(&tickslock);
-  acquire(&np->lock);
-  np->start=ticks;
-  release(&np->lock);
-  release(&tickslock);
+ 
 
   return pid;
 }
@@ -710,10 +712,40 @@ int pouriaLove=0;
     return pouriaLove;
 }
 
+int
+proces(void)
+{
+    int n = 0;
+    struct proc *p;
+     p = proc;
 
+    while (p< &proc[NPROC])
+    {
+       p++;
+       acquire(&p -> lock);
+       if(p->state != UNUSED){
+           n++;
+        }
+        release(&p->lock);
+    }
+    return n;
+}
 
-int sysinfo(struct sysinfo *info){
+int sysinfo(uint64 info){
 
-return 0;
+{
+   
+    struct proc *p = myproc();
+    struct sysinfo tempInfo;
+    tempInfo.uptime = ticks;
+    tempInfo.totalram = PHYSTOP - KERNBASE;
+    tempInfo.freeram = memoryAvaible();
+    tempInfo.procs = proces();
+
+    if(copyout(p->pagetable, info, (char *)&tempInfo, sizeof(tempInfo)) < 0) {
+        return -1;
+    }
+    return 0;
+}
 
 }
